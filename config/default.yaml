@@ -1,0 +1,36 @@
+# MotionSense-VLM config (UCF101 subset)
+# Dataset root should contain: root/ClassName/video.avi (e.g. UCF101/ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c01.avi)
+
+data:
+  root: ./UCF101
+  # Subset: use only these 10 classes (folder names under root/)
+  classes:
+    - basketball
+    - biking
+    - diving
+    - golf_swing
+    - horse_riding
+    - soccer_juggling
+    - tennis_swing
+    - trampoline_jumping
+    - volleyball_spiking
+    - walking
+  max_clips_per_class: 15  # max clips per class (null = use all)
+  frame_sample_rate: 1     # sample 1 frame per N seconds
+  clip_duration_sec: 5     # not used as frame cap; use max_frames from dataset
+  max_frames: 16           # cap frames per video (e.g. 16 for 16-frame clips)
+  img_size: 224
+
+model:
+  clip_name: ViT-B/32
+  flow_bins: 8
+  fusion_hidden: 128
+
+train:
+  batch_size: 8
+  epochs: 20
+  lr: 1.0e-4
+
+paths:
+  outputs: ./outputs
+  checkpoints: ./outputs/checkpoints
