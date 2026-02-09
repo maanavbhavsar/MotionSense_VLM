@@ -29,14 +29,19 @@ class VideoActionDataset(Dataset):
         self,
         root: str | Path,
         class_to_idx: Optional[Dict[str, int]] = None,
+        classes: Optional[List[str]] = None,
         sample_rate: int = 1,
         max_frames: Optional[int] = None,
         img_size: Tuple[int, int] = (224, 224),
+        max_classes: Optional[int] = None,
+        max_clips_per_class: Optional[int] = None,
     ):
         self.root = Path(root)
         self.sample_rate = sample_rate
         self.max_frames = max_frames
         self.img_size = img_size
+        self.max_classes = max_classes
+        self.max_clips_per_class = max_clips_per_class
 
         if not self.root.exists():
             raise FileNotFoundError(f"Dataset root not found: {self.root}")
@@ -44,25 +49,34 @@ class VideoActionDataset(Dataset):
         # Discover classes and (video_path, label_idx) samples
         self.samples: List[Tuple[Path, int]] = []
 
-        if class_to_idx is None:
-            classes = sorted([d.name for d in self.root.iterdir() if d.is_dir()])
-            if not classes:
+        if class_to_idx is not None:
+            self.class_to_idx = class_to_idx
+        elif classes is not None:
+            class_list = classes[: max_classes] if max_classes is not None else classes
+            self.class_to_idx = {c: i for i, c in enumerate(class_list)}
+        else:
+            discovered = sorted([d.name for d in self.root.iterdir() if d.is_dir()])
+            if not discovered:
                 raise ValueError(
                     f"No class subdirectories found under {self.root}. "
                     "Expected structure: root/class_name/video_file.mp4"
                 )
-            self.class_to_idx = {c: i for i, c in enumerate(classes)}
-        else:
-            self.class_to_idx = class_to_idx
+            if max_classes is not None:
+                discovered = discovered[: max_classes]
+            self.class_to_idx = {c: i for i, c in enumerate(discovered)}
 
         for class_name, idx in self.class_to_idx.items():
             class_dir = self.root / class_name
             if not class_dir.exists():
-                # Allow missing classes (e.g., partial subsets)
                 continue
+            clips: List[Path] = []
             for ext in ("*.mp4", "*.avi", "*.mkv"):
-                for p in class_dir.glob(ext):
-                    self.samples.append((p, idx))
+                clips.extend(class_dir.glob(ext))
+            clips = sorted(clips)
+            if max_clips_per_class is not None:
+                clips = clips[: max_clips_per_class]
+            for p in clips:
+                self.samples.append((p, idx))
 
         if not self.samples:
             raise ValueError(
