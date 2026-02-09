@@ -46,6 +46,7 @@ venv.bak/
 data/videos/
 data/raw/
 data/processed/
+UCF101/
 outputs/
 *.pth
 *.ckpt
