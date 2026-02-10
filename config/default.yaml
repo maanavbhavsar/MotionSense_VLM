@@ -1,20 +1,22 @@
 # MotionSense-VLM config (UCF101 subset)
-# Dataset root should contain: root/ClassName/video.avi (e.g. UCF101/ApplyEyeMakeup/v_ApplyEyeMakeup_g01_c01.avi)
+# Dataset root should contain: root/ClassName/video.avi
+# For this setup we use the training split directory UCF101/train, which contains
+# class folders like UCF101/train/Basketball/v_BasketballDunk_g01_c01.avi
 
 data:
-  root: ./UCF101
+  root: ./UCF101/train
   # Subset: use only these 10 classes (folder names under root/)
   classes:
-    - basketball
-    - biking
-    - diving
-    - golf_swing
-    - horse_riding
-    - soccer_juggling
-    - tennis_swing
-    - trampoline_jumping
-    - volleyball_spiking
-    - walking
+    - Basketball
+    - Biking
+    - Diving
+    - GolfSwing
+    - HorseRiding
+    - SoccerJuggling
+    - TennisSwing
+    - TrampolineJumping
+    - VolleyballSpiking
+    - WalkingWithDog
   max_clips_per_class: 15  # max clips per class (null = use all)
   frame_sample_rate: 1     # sample 1 frame per N seconds
   clip_duration_sec: 5     # not used as frame cap; use max_frames from dataset
@@ -28,7 +30,7 @@ model:
 
 train:
   batch_size: 8
-  epochs: 20
+  epochs: 1
   lr: 1.0e-4
 
 paths:
