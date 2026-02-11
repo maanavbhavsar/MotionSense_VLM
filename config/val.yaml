@@ -1,0 +1,34 @@
+# Validation-set config: same as default but data.root points to UCF101/val.
+# Use for fair evaluation (CLIP-only vs motion-aware on same val set).
+
+data:
+  root: ./UCF101/val
+  classes:
+    - Basketball
+    - Biking
+    - Diving
+    - GolfSwing
+    - HorseRiding
+    - SoccerJuggling
+    - TennisSwing
+    - TrampolineJumping
+    - VolleyballSpiking
+    - WalkingWithDog
+  max_clips_per_class: 15
+  frame_sample_rate: 1
+  max_frames: 16
+  img_size: 224
+
+model:
+  clip_name: ViT-B/32
+  flow_bins: 8
+  fusion_hidden: 128
+
+train:
+  batch_size: 8
+  epochs: 10
+  lr: 1.0e-4
+
+paths:
+  outputs: ./outputs
+  checkpoints: ./outputs/checkpoints

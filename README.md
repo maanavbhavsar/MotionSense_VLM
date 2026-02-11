@@ -62,19 +62,52 @@ Key dependencies:
 
 ## Usage
 
-*Coming soon - project is in early development phase*
+From the project root. Data is expected under `UCF101/train` and `UCF101/val` (see `config/default.yaml` and `config/val.yaml`).
+
+**Train CLIP-only baseline:**
+```bash
+python scripts/train.py
+# Saves: outputs/checkpoints/clip_only_head.pt
+```
+
+**Train motion-aware model (CLIP + optical flow fusion):**
+```bash
+python scripts/train_motion_aware.py --config config/default.yaml
+# Saves: outputs/checkpoints/motion_aware.pt
+```
+
+**Compare both models on the validation set:**
+```bash
+python scripts/run_comparison.py --val-config config/val.yaml
+```
+
+**Evaluate a single checkpoint:**
+```bash
+python scripts/run_eval.py --config config/val.yaml --checkpoint outputs/checkpoints/clip_only_head.pt
+```
+
+## Results
+
+Evaluation on the UCF101 subset (10 classes) with `config/val.yaml`. Motion-aware (CLIP + optical flow statistics) outperforms the CLIP-only baseline on held-out validation data.
+
+| Model         | Val accuracy |
+|---------------|--------------|
+| CLIP-only     | **76.51%**   |
+| Motion-aware  | **86.58%**   |
+
+Adding explicit motion (Farneback optical flow: magnitude + direction bins) and late fusion improves validation accuracy by ~10 percentage points, consistent with the idea that motion is critical for action recognition beyond static appearance.
 
 ## Development Status
 
-**Current Phase**: Setup & Infrastructure ✅
+**Current Phase**: Training, evaluation & benchmarking ✅
 
-- [x] Project structure
-- [x] Git repository setup
-- [x] Dependencies configuration
-- [ ] Data loading pipeline
-- [ ] Model implementations
-- [ ] Training scripts
-- [ ] Evaluation tools
+- [x] Project structure and config (YAML)
+- [x] Data loading (video frames, optional flow stats)
+- [x] CLIP encoder + linear head (CLIP-only)
+- [x] Motion-aware fusion (CLIP + flow stats → MLP)
+- [x] Training scripts (`train.py`, `train_motion_aware.py`)
+- [x] Evaluation and comparison (`run_eval.py`, `run_comparison.py`)
+- [ ] Optional: visual demo (flow + prediction)
 
 ## License
 
