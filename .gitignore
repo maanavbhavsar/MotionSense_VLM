@@ -47,7 +47,10 @@ data/videos/
 data/raw/
 data/processed/
 UCF101/
-outputs/
+# Ignore outputs but allow outputs/demo/ (use outputs/* so negations apply)
+outputs/*
+!outputs/demo/
+!outputs/demo/*
 *.pth
 *.ckpt
 *.h5
