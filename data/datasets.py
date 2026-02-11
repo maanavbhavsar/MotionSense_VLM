@@ -1,12 +1,14 @@
-"""PyTorch datasets for video action recognition (Phase 2)."""
+"""PyTorch datasets for video action recognition."""
 
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 
 from .loader import load_video_frames, frames_to_tensor
+from .flow import compute_flow_stats
 
 
 class VideoActionDataset(Dataset):
@@ -22,7 +24,7 @@ class VideoActionDataset(Dataset):
             class_b/
                 ...
 
-    This Phase 2 version only handles RGB frame tensors (no motion/flow yet).
+    Optionally returns flow statistics per clip for motion-aware training/eval.
     """
 
     def __init__(
@@ -35,6 +37,8 @@ class VideoActionDataset(Dataset):
         img_size: Tuple[int, int] = (224, 224),
         max_classes: Optional[int] = None,
         max_clips_per_class: Optional[int] = None,
+        return_flow_stats: bool = False,
+        flow_bins: int = 8,
     ):
         self.root = Path(root)
         self.sample_rate = sample_rate
@@ -42,6 +46,8 @@ class VideoActionDataset(Dataset):
         self.img_size = img_size
         self.max_classes = max_classes
         self.max_clips_per_class = max_clips_per_class
+        self.return_flow_stats = return_flow_stats
+        self.flow_bins = flow_bins
 
         if not self.root.exists():
             raise FileNotFoundError(f"Dataset root not found: {self.root}")
@@ -87,7 +93,9 @@ class VideoActionDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+    def __getitem__(
+        self, idx: int
+    ) -> Union[Tuple[torch.Tensor, int], Tuple[torch.Tensor, np.ndarray, int]]:
         path, label = self.samples[idx]
 
         frames = load_video_frames(
@@ -97,6 +105,9 @@ class VideoActionDataset(Dataset):
             img_size=self.img_size,
         )
         tensor = frames_to_tensor(frames)
+        if self.return_flow_stats:
+            flow_stats = compute_flow_stats(tensor, num_bins=self.flow_bins)
+            return tensor, flow_stats, label
         return tensor, label
 
     @property
@@ -127,6 +138,31 @@ def collate_basic(batch):
 
     return (
         torch.stack(padded),  # (B, T, C, H, W)
+        torch.tensor(labels, dtype=torch.long),
+    )
+
+
+def collate_motion_aware(batch):
+    """
+    Collate for (frames, flow_stats, label) samples.
+    Pads variable-length frame sequences; stacks flow_stats and labels.
+    """
+    frames_list, flow_stats_list, labels = zip(*batch)
+    max_n = max(f.shape[0] for f in frames_list)
+    _, C, H, W = frames_list[0].shape
+
+    padded = []
+    for f in frames_list:
+        n = f.shape[0]
+        if n < max_n:
+            pad = f[-1:].expand(max_n - n, -1, -1, -1).clone()
+            f = torch.cat([f, pad], dim=0)
+        padded.append(f)
+
+    flow_stats = torch.from_numpy(np.stack(flow_stats_list)).float()
+    return (
+        torch.stack(padded),  # (B, T, C, H, W)
+        flow_stats,           # (B, flow_dim)
         torch.tensor(labels, dtype=torch.long),
     )
 
